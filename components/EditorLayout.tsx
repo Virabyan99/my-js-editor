@@ -9,7 +9,7 @@ import {
   IconCircleDotted,
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
-import * as monaco from 'monaco-editor'; // Import Monaco types for theme definition
+import * as monaco from 'monaco-editor'; // Import Monaco types for theme definition and editor instance
 
 // Dynamically import the Monaco Editor with SSR disabled
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -21,7 +21,7 @@ const EditorLayout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
   const [errorLine, setErrorLine] = useState<number | null>(null);
-  const editorRef = React.useRef<any>(null); // Use 'any' temporarily for simplicity
+  const editorRef = React.useRef<monaco.editor.ICodeEditor | null>(null); // Properly typed editor reference
 
   // Detect mobile view
   useEffect(() => {
@@ -101,7 +101,7 @@ const EditorLayout: React.FC = () => {
     }
   };
 
-  // Define the custom theme
+  // Define the custom theme with additional highlight overrides
   const defineCustomTheme = (monacoInstance: typeof monaco) => {
     monacoInstance.editor.defineTheme('customLight', {
       base: 'vs', // Based on the Visual Studio light theme
@@ -109,6 +109,10 @@ const EditorLayout: React.FC = () => {
       rules: [], // No additional token rules needed
       colors: {
         'editor.background': '#f0f0f0', // Set background color to #f0f0f0
+        'editor.selectionBackground': '#f0f0f0', // Match background for selection
+        'editor.lineHighlightBackground': '#f0f0f0', // Match background for current line
+        'editor.wordHighlightBackground': '#f0f0f0', // Match background for word under cursor
+        'editor.wordHighlightStrongBackground': '#f0f0f0', // Match background for strong word highlight
       },
     });
   };
@@ -120,9 +124,9 @@ const EditorLayout: React.FC = () => {
         display: 'grid',
         gridTemplateColumns: isMobile
           ? '100%'
-          : `${splitPercentage}% 2px ${100 - splitPercentage}%`,
+          : `${splitPercentage}% 1px ${100 - splitPercentage}%`,
         gridTemplateRows: isMobile
-          ? `${splitPercentage}% 2px ${100 - splitPercentage}%`
+          ? `${splitPercentage}% 1px ${100 - splitPercentage}%`
           : '100%',
         backgroundColor: 'var(--background)',
       }}
@@ -144,11 +148,40 @@ const EditorLayout: React.FC = () => {
             options={{
               fontFamily: 'firaCode',
               fontSize: 14,
+              minimap: { enabled: false },
+              hideCursorInOverviewRuler: true,
+              scrollBeyondLastLine: false,
+              selectionHighlight: false, // Disables matching selection highlights
+              renderLineHighlight: 'none', // Disables current-line highlight
+              selectOnLineNumbers: false, // Prevents selecting on line number click
+              selectionClipboard: false, // Prevents copying selected text to clipboard
+              foldingHighlight: false, // Disables folding highlights
+              scrollbar: {
+                vertical: 'hidden',
+                horizontal: 'hidden',
+                verticalSliderSize: 0,
+              },
             }}
             onMount={(editor, monacoInstance) => {
               editorRef.current = editor;
               defineCustomTheme(monacoInstance); // Define the custom theme
               monacoInstance.editor.setTheme('customLight'); // Apply the custom theme
+
+              // Prevent text selection by resetting it to a cursor position
+              editor.onDidChangeCursorSelection(() => {
+                const selection = editor.getSelection();
+                if (selection && !selection.isEmpty()) {
+                  const position = selection.getStartPosition();
+                  editor.setSelection(
+                    new monacoInstance.Range(
+                      position.lineNumber,
+                      position.column,
+                      position.lineNumber,
+                      position.column
+                    )
+                  );
+                }
+              });
             }}
           />
         </div>
@@ -169,7 +202,7 @@ const EditorLayout: React.FC = () => {
 
       {/* Divider */}
       <div
-        className={`w-2 ${isMobile ? 'cursor-row-resize' : 'cursor-col-resize'}`}
+        className={`w-[2px] ${isMobile ? 'cursor-row-resize' : 'cursor-col-resize'}`}
         style={{
           backgroundColor: 'var(--divider)',
           borderRadius: '4px',
@@ -179,7 +212,7 @@ const EditorLayout: React.FC = () => {
 
       {/* Console Panel */}
       <motion.div
-        className="rounded-lg shadow-lg p-4 ml-2 mr-3 relative"
+        className="rounded-lg shadow-lg p-4 mr-3 relative"
         style={{ backgroundColor: 'var(--panel-bg)' }}
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
