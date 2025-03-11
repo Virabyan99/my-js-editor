@@ -1,5 +1,5 @@
-'use client'
 // components/EditorLayout.tsx
+'use client'
 import React, { useState, useEffect } from 'react'
 import { get, set } from 'idb-keyval'
 import { motion } from 'framer-motion'
@@ -11,7 +11,6 @@ import {
 import dynamic from 'next/dynamic'
 import * as monaco from 'monaco-editor'
 
-// Dynamically import the Monaco Editor with SSR disabled
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
 const EditorLayout: React.FC = () => {
@@ -19,11 +18,8 @@ const EditorLayout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false)
   const [consoleOutput, setConsoleOutput] = useState('')
   const [errorLine, setErrorLine] = useState<number | null>(null)
-  const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(
-    null
-  )
+  const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
 
-  // Detect mobile view
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
     handleResize()
@@ -31,13 +27,11 @@ const EditorLayout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Load saved split percentage from IndexedDB
   useEffect(() => {
     const key = isMobile ? 'panelHeight' : 'panelWidth'
     get(key).then((savedValue) => setSplitPercentage(savedValue || 50))
   }, [isMobile])
 
-  // Handle panel resizing
   const handleDrag = (e: MouseEvent) => {
     if (isMobile) {
       const totalHeight = window.innerHeight
@@ -59,16 +53,11 @@ const EditorLayout: React.FC = () => {
   const startDragging = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
     document.addEventListener('mousemove', handleDrag as EventListener)
-    document.addEventListener(
-      'mouseup',
-      () => {
-        document.removeEventListener('mousemove', handleDrag as EventListener)
-      },
-      { once: true }
-    )
+    document.addEventListener('mouseup', () => {
+      document.removeEventListener('mousemove', handleDrag as EventListener)
+    }, { once: true })
   }
 
-  // Function to run the code and capture console output
   const runCode = () => {
     if (!editorRef.current) return
     const code = editorRef.current.getValue()
@@ -90,7 +79,7 @@ const EditorLayout: React.FC = () => {
     }
   }
 
-  // Define the custom theme with comprehensive highlight overrides
+  // Updated custom theme with visible selection background
   const defineCustomTheme = (monacoInstance: typeof monaco) => {
     monacoInstance.editor.defineTheme('customLight', {
       base: 'vs',
@@ -98,7 +87,7 @@ const EditorLayout: React.FC = () => {
       rules: [],
       colors: {
         'editor.background': '#f0f0f0',
-        'editor.selectionBackground': '#f0f0f0', // Invisible selection background
+        'editor.selectionBackground': '#e0e0e0', // Visible selection background (light gray)
         'editor.lineHighlightBackground': '#f0f0f0', // No line highlight
         'editor.lineHighlightBorder': '#f0f0f0',
         'editor.wordHighlightBackground': '#f0f0f0', // No word highlight on cursor
@@ -126,7 +115,6 @@ const EditorLayout: React.FC = () => {
           : '100%',
         backgroundColor: 'var(--background)',
       }}>
-      {/* Editor Panel */}
       <motion.div
         className="rounded-lg shadow-lg p-4 relative"
         style={{ backgroundColor: 'var(--panel-bg)' }}
@@ -160,48 +148,26 @@ const EditorLayout: React.FC = () => {
               editorRef.current = editor
               defineCustomTheme(monacoInstance)
               monacoInstance.editor.setTheme('customLight')
-              // No onDidChangeCursorSelection listener to allow intentional selections
             }}
           />
         </div>
-        <motion.div
-          className="absolute top-2 left-2"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 1 }}>
-          <IconCircleDotted
-            className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
-            size={24}
-          />
+        <motion.div className="absolute top-2 left-2" whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          <IconCircleDotted className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out" size={24} />
         </motion.div>
-        <motion.div
-          className="absolute top-2 right-2"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 1 }}
-          onClick={runCode}>
-          <IconPlayerPlay
-            className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
-            size={24}
-          />
+        <motion.div className="absolute top-2 right-2" whileHover={{ scale: 1.1 }} transition={{ duration: 1 }} onClick={runCode}>
+          <IconPlayerPlay className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out" size={24} />
         </motion.div>
-        <motion.div
-          className="absolute bottom-2 left-2"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 1 }}>
-          <IconCircleDotted
-            className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
-            size={24}
-          />
+        <motion.div className="absolute bottom-2 left-2" whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          <IconCircleDotted className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out" size={24} />
         </motion.div>
       </motion.div>
 
-      {/* Divider */}
       <div
         className={`w-[2px] ${isMobile ? 'cursor-row-resize' : 'cursor-col-resize'}`}
         style={{ backgroundColor: 'var(--divider)', borderRadius: '4px' }}
         onMouseDown={startDragging}
       />
 
-      {/* Console Panel */}
       <motion.div
         className="rounded-lg shadow-lg p-4 mr-3 relative"
         style={{ backgroundColor: 'var(--panel-bg)' }}
@@ -217,32 +183,14 @@ const EditorLayout: React.FC = () => {
           }}>
           {consoleOutput || 'Run your code to see output here'}
         </div>
-        <motion.div
-          className="absolute top-2 right-2"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 1 }}>
-          <IconCircleDotted
-            className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
-            size={24}
-          />
+        <motion.div className="absolute top-2 right-2" whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          <IconCircleDotted className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out" size={24} />
         </motion.div>
-        <motion.div
-          className="absolute bottom-2 right-2"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 1 }}>
-          <IconSettings
-            className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
-            size={24}
-          />
+        <motion.div className="absolute bottom-2 right-2" whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          <IconSettings className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out" size={24} />
         </motion.div>
-        <motion.div
-          className="absolute bottom-2 left-2"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 1 }}>
-          <IconCircleDotted
-            className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
-            size={24}
-          />
+        <motion.div className="absolute bottom-2 left-2" whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          <IconCircleDotted className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out" size={24} />
         </motion.div>
       </motion.div>
     </div>
