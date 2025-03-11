@@ -8,7 +8,7 @@
 :root {
   --background: #f0f0f0;
   --panel_bg: #ffffff;
-  --divider: #cccccc; /* Changed for better contrast */
+  --divider: #f0f0f0; /* Changed for better contrast */
   --foreground: #333333; /* Define foreground color (dark gray for text) */
   --font-fira-code: 'Fira Code', monospace; /* Define font stack */
   --sidebar-ring: #e5e7eb; /* Gray-200 */
