@@ -71,23 +71,28 @@ const EditorLayout: React.FC = () => {
         gridTemplateRows: isMobile
           ? `${splitPercentage}% 2px ${100 - splitPercentage}%`
           : '100%',
+        backgroundColor: 'var(--background)'
       }}
     >
       {/* Editor Panel */}
-      <div className="bg-white rounded-lg shadow-md overflow-auto mr-3">
+      <div className="rounded-lg shadow-md overflow-auto mr-3"
+        style={{ backgroundColor: 'var(--panel-bg)' }}
+      >
         Editor Panel
       </div>
 
       {/* Divider */}
       <div
-        className={`bg-gray-400 w-2.5  ${
+        className={` w-2.5  ${
           isMobile ? 'cursor-row-resize' : 'cursor-col-resize'
         }`}
+        style={{ backgroundColor: 'var(--divider)' }}
         onMouseDown={startDragging}
       />
 
       {/* Console Panel */}
-      <div className="bg-white rounded-lg shadow-md overflow-auto ml-5">
+      <div className=" rounded-lg shadow-md overflow-auto ml-5"
+      style={{ backgroundColor: 'var(--panel-bg)' }}>
         Console Panel
       </div>
     </div>
