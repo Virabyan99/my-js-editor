@@ -84,7 +84,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-::selection {
+.monaco-editor ::selection {
   background-color: transparent;
 }
 

@@ -9,25 +9,23 @@ import {
   IconCircleDotted,
 } from '@tabler/icons-react'
 import dynamic from 'next/dynamic'
-import * as monaco from 'monaco-editor' // Import Monaco types for theme definition and editor instance
+import * as monaco from 'monaco-editor'
 
 // Dynamically import the Monaco Editor with SSR disabled
-const Editor = dynamic(() => import('@monaco-editor/react'), {
-  ssr: false, // Prevents server-side rendering of the editor
-})
+const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
 const EditorLayout: React.FC = () => {
   const [splitPercentage, setSplitPercentage] = useState(50)
   const [isMobile, setIsMobile] = useState(false)
   const [consoleOutput, setConsoleOutput] = useState('')
   const [errorLine, setErrorLine] = useState<number | null>(null)
-  const editorRef = React.useRef<monaco.editor.ICodeEditor | null>(null) // Properly typed editor reference
+  const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(
+    null
+  )
 
   // Detect mobile view
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -36,13 +34,7 @@ const EditorLayout: React.FC = () => {
   // Load saved split percentage from IndexedDB
   useEffect(() => {
     const key = isMobile ? 'panelHeight' : 'panelWidth'
-    get(key).then((savedValue) => {
-      if (savedValue) {
-        setSplitPercentage(savedValue)
-      } else {
-        setSplitPercentage(50) // Default value
-      }
-    })
+    get(key).then((savedValue) => setSplitPercentage(savedValue || 50))
   }, [isMobile])
 
   // Handle panel resizing
@@ -78,16 +70,13 @@ const EditorLayout: React.FC = () => {
 
   // Function to run the code and capture console output
   const runCode = () => {
-    if (!editorRef.current) return // Guard against null reference
+    if (!editorRef.current) return
     const code = editorRef.current.getValue()
     if (!code) return
 
     const originalConsoleLog = console.log
     const logs: string[] = []
-
-    console.log = (...args: any[]) => {
-      logs.push(args.map(String).join(' '))
-    }
+    console.log = (...args: any[]) => logs.push(args.map(String).join(' '))
 
     try {
       const result = new Function(code)()
@@ -95,24 +84,31 @@ const EditorLayout: React.FC = () => {
       setErrorLine(null)
     } catch (error) {
       setConsoleOutput(String(error))
-      setErrorLine(1) // Placeholder for error line
+      setErrorLine(1)
     } finally {
       console.log = originalConsoleLog
     }
   }
 
-  // Define the custom theme with additional highlight overrides
+  // Define the custom theme with comprehensive highlight overrides
   const defineCustomTheme = (monacoInstance: typeof monaco) => {
     monacoInstance.editor.defineTheme('customLight', {
-      base: 'vs', // Based on the Visual Studio light theme
-      inherit: true, // Inherit other styles from the base theme
-      rules: [], // No additional token rules needed
+      base: 'vs',
+      inherit: true,
+      rules: [],
       colors: {
-        'editor.background': '#f0f0f0', // Set background color to #f0f0f0
-        'editor.selectionBackground': '#f0f0f0', // Match background for selection
-        'editor.lineHighlightBackground': '#f0f0f0', // Match background for current line
-        'editor.wordHighlightBackground': '#f0f0f0', // Match background for word under cursor
-        'editor.wordHighlightStrongBackground': '#f0f0f0', // Match background for strong word highlight
+        'editor.background': '#f0f0f0',
+        'editor.selectionBackground': '#f0f0f0', // Invisible selection background
+        'editor.lineHighlightBackground': '#f0f0f0', // No line highlight
+        'editor.lineHighlightBorder': '#f0f0f0',
+        'editor.wordHighlightBackground': '#f0f0f0', // No word highlight on cursor
+        'editor.wordHighlightStrongBackground': '#f0f0f0',
+        'editor.findMatchBackground': '#f0f0f0',
+        'editor.findMatchHighlightBackground': '#f0f0f0',
+        'editor.hoverHighlightBackground': '#f0f0f0', // No hover highlight
+        'editor.rangeHighlightBackground': '#f0f0f0',
+        'editorBracketMatch.background': '#f0f0f0',
+        'editorCursor.foreground': '#000000', // Ensure cursor is visible
       },
     })
   }
@@ -142,18 +138,17 @@ const EditorLayout: React.FC = () => {
             height="80%"
             defaultLanguage="javascript"
             defaultValue="// Write your code here"
-            theme="customLight" // Use the custom theme
+            theme="customLight"
             options={{
               fontFamily: 'firaCode',
               fontSize: 14,
               minimap: { enabled: false },
               hideCursorInOverviewRuler: true,
               scrollBeyondLastLine: false,
-              selectionHighlight: false, // Disables matching selection highlights
-              renderLineHighlight: 'none', // Disables current-line highlight
-              selectOnLineNumbers: false, // Prevents selecting on line number click
-              selectionClipboard: false, // Prevents copying selected text to clipboard
-              foldingHighlight: false, // Disables folding highlights
+              selectionHighlight: false, // Disable matching selection highlights
+              renderLineHighlight: 'none', // No current-line highlight
+              selectOnLineNumbers: false, // No selection on line number click
+              foldingHighlight: false, // No folding highlights
               scrollbar: {
                 vertical: 'hidden',
                 horizontal: 'hidden',
@@ -163,24 +158,9 @@ const EditorLayout: React.FC = () => {
             }}
             onMount={(editor, monacoInstance) => {
               editorRef.current = editor
-              defineCustomTheme(monacoInstance) // Define the custom theme
-              monacoInstance.editor.setTheme('customLight') // Apply the custom theme
-
-              // Prevent text selection by resetting it to a cursor position
-              editor.onDidChangeCursorSelection(() => {
-                const selection = editor.getSelection()
-                if (selection && !selection.isEmpty()) {
-                  const position = selection.getStartPosition()
-                  editor.setSelection(
-                    new monacoInstance.Range(
-                      position.lineNumber,
-                      position.column,
-                      position.lineNumber,
-                      position.column
-                    )
-                  )
-                }
-              })
+              defineCustomTheme(monacoInstance)
+              monacoInstance.editor.setTheme('customLight')
+              // No onDidChangeCursorSelection listener to allow intentional selections
             }}
           />
         </div>
@@ -205,8 +185,8 @@ const EditorLayout: React.FC = () => {
         </motion.div>
         <motion.div
           className="absolute bottom-2 left-2"
-          whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
-            
+          whileHover={{ scale: 1.1 }}
+          transition={{ duration: 1 }}>
           <IconCircleDotted
             className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
             size={24}
@@ -217,10 +197,7 @@ const EditorLayout: React.FC = () => {
       {/* Divider */}
       <div
         className={`w-[2px] ${isMobile ? 'cursor-row-resize' : 'cursor-col-resize'}`}
-        style={{
-          backgroundColor: 'var(--divider)',
-          borderRadius: '4px',
-        }}
+        style={{ backgroundColor: 'var(--divider)', borderRadius: '4px' }}
         onMouseDown={startDragging}
       />
 
@@ -242,7 +219,8 @@ const EditorLayout: React.FC = () => {
         </div>
         <motion.div
           className="absolute top-2 right-2"
-          whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          whileHover={{ scale: 1.1 }}
+          transition={{ duration: 1 }}>
           <IconCircleDotted
             className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
             size={24}
@@ -250,15 +228,17 @@ const EditorLayout: React.FC = () => {
         </motion.div>
         <motion.div
           className="absolute bottom-2 right-2"
-          whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          whileHover={{ scale: 1.1 }}
+          transition={{ duration: 1 }}>
           <IconSettings
             className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
             size={24}
           />
         </motion.div>
         <motion.div
-          className="absolute bottom-2 left-2 "
-          whileHover={{ scale: 1.1 }} transition={{ duration: 1 }}>
+          className="absolute bottom-2 left-2"
+          whileHover={{ scale: 1.1 }}
+          transition={{ duration: 1 }}>
           <IconCircleDotted
             className="text-black hover:text-white hover:bg-black p-1 rounded transition-all duration-1000 ease-in-out"
             size={24}
