@@ -2,17 +2,16 @@
 // components/EditorLayout.tsx
 import React, { useState, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
+import { motion } from 'framer-motion';
 
 const EditorLayout: React.FC = () => {
-  // State for split percentage (default to 50 for equal sizes)
   const [splitPercentage, setSplitPercentage] = useState(50);
-  // State to detect mobile view
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile view based on screen width
+  // Detect mobile view
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768); // Tailwind's md breakpoint
+      setIsMobile(window.innerWidth < 768);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -26,12 +25,12 @@ const EditorLayout: React.FC = () => {
       if (savedValue) {
         setSplitPercentage(savedValue);
       } else {
-        setSplitPercentage(50); // Default to equal sizes
+        setSplitPercentage(50); // Default value
       }
     });
   }, [isMobile]);
 
-  // Handle dragging for resizing panels
+  // Handle panel resizing
   const handleDrag = (e: MouseEvent) => {
     if (isMobile) {
       const totalHeight = window.innerHeight;
@@ -50,7 +49,6 @@ const EditorLayout: React.FC = () => {
     }
   };
 
-  // Start dragging on divider click
   const startDragging = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     document.addEventListener('mousemove', handleDrag as EventListener);
@@ -61,40 +59,45 @@ const EditorLayout: React.FC = () => {
 
   return (
     <div
-      className="h-screen bg-gray-200 p-[2vw]"
+      className="h-screen p-4 gap-2 w-screen"
       style={{
         display: 'grid',
-        // Desktop: horizontal layout; Mobile: vertical layout
-        gridTemplateColumns: isMobile
-          ? '100%'
-          : `${splitPercentage}% 2px ${100 - splitPercentage}%`,
-        gridTemplateRows: isMobile
-          ? `${splitPercentage}% 2px ${100 - splitPercentage}%`
-          : '100%',
-        backgroundColor: 'var(--background)'
+        gridTemplateColumns: isMobile ? '100%' : `${splitPercentage}% 2px ${100 - splitPercentage}%`,
+        gridTemplateRows: isMobile ? `${splitPercentage}% 2px ${100 - splitPercentage}%` : '100%',
+        backgroundColor: 'var(--background)',
       }}
     >
       {/* Editor Panel */}
-      <div className="rounded-lg shadow-md overflow-auto mr-3"
+      <motion.div
+        className="rounded-lg shadow-lg p-4 flex justify-center items-center"
         style={{ backgroundColor: 'var(--panel-bg)' }}
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        Editor Panel
-      </div>
+        <div className="text-xl text-gray-700">Editor Panel</div>
+      </motion.div>
 
       {/* Divider */}
       <div
-        className={` w-2.5  ${
-          isMobile ? 'cursor-row-resize' : 'cursor-col-resize'
-        }`}
-        style={{ backgroundColor: 'var(--divider)' }}
+        className={`w-2 ${isMobile ? 'cursor-row-resize' : 'cursor-col-resize'}`}
+        style={{
+          backgroundColor: 'var(--divider)',
+          borderRadius: '4px',
+        }}
         onMouseDown={startDragging}
       />
 
       {/* Console Panel */}
-      <div className=" rounded-lg shadow-md overflow-auto ml-5"
-      style={{ backgroundColor: 'var(--panel-bg)' }}>
-        Console Panel
-      </div>
+      <motion.div
+        className="rounded-lg shadow-lg p-4 flex justify-center items-center ml-2 mr-3"
+        style={{ backgroundColor: 'var(--panel-bg)' }}
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="text-xl text-gray-700">Console Panel</div>
+      </motion.div>
     </div>
   );
 };
