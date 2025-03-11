@@ -9,6 +9,7 @@ import {
   IconCircleDotted,
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
+import * as monaco from 'monaco-editor'; // Import Monaco types for theme definition
 
 // Dynamically import the Monaco Editor with SSR disabled
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -100,9 +101,21 @@ const EditorLayout: React.FC = () => {
     }
   };
 
+  // Define the custom theme
+  const defineCustomTheme = (monacoInstance: typeof monaco) => {
+    monacoInstance.editor.defineTheme('customLight', {
+      base: 'vs', // Based on the Visual Studio light theme
+      inherit: true, // Inherit other styles from the base theme
+      rules: [], // No additional token rules needed
+      colors: {
+        'editor.background': '#f0f0f0', // Set background color to #f0f0f0
+      },
+    });
+  };
+
   return (
     <div
-      className="h-screen p-4 gap-2 w-screen"
+      className="h-screen p-2 gap-2 w-screen"
       style={{
         display: 'grid',
         gridTemplateColumns: isMobile
@@ -127,14 +140,15 @@ const EditorLayout: React.FC = () => {
             height="80%"
             defaultLanguage="javascript"
             defaultValue="// Write your code here"
-            theme="vs-dark"
-            
+            theme="customLight" // Use the custom theme
             options={{
               fontFamily: 'firaCode',
               fontSize: 14,
             }}
-            onMount={(editor) => {
+            onMount={(editor, monacoInstance) => {
               editorRef.current = editor;
+              defineCustomTheme(monacoInstance); // Define the custom theme
+              monacoInstance.editor.setTheme('customLight'); // Apply the custom theme
             }}
           />
         </div>
@@ -165,15 +179,15 @@ const EditorLayout: React.FC = () => {
 
       {/* Console Panel */}
       <motion.div
-        className="rounded-lg shadow-lg p-4  ml-2 mr-3 relative"
+        className="rounded-lg shadow-lg p-4 ml-2 mr-3 relative"
         style={{ backgroundColor: 'var(--panel-bg)' }}
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div
-          className={`h-80 bg-gray-800 text-white mt-5  rounded overflow-auto ${errorLine ? 'bg-red-100' : ''}`}
-          style={{ fontFamily: 'var(--font-fira-code)', fontSize: '14px' }}
+          className={`h-80 text-gray-800 mt-5 rounded overflow-auto ${errorLine ? 'bg-red-100' : ''}`}
+          style={{ fontFamily: 'var(--font-fira-code)', fontSize: '14px', backgroundColor: 'var(--background)' }}
         >
           {consoleOutput || 'Run your code to see output here'}
         </div>
