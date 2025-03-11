@@ -1,37 +1,37 @@
 "use client";
+// components/EditorLayout.tsx
 import React, { useState, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
-import { motion } from 'framer-motion';
 
 const EditorLayout: React.FC = () => {
+  // State for split percentage (default to 50 for equal sizes)
   const [splitPercentage, setSplitPercentage] = useState(50);
+  // State to detect mobile view
   const [isMobile, setIsMobile] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
+  // Detect mobile view based on screen width
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 768); // Tailwind's md breakpoint
     };
     handleResize();
-    setMounted(true);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Load saved split percentage from IndexedDB
   useEffect(() => {
-    if (mounted) {
-      const key = isMobile ? 'panelHeight' : 'panelWidth';
-      get(key).then((savedValue) => {
-        if (savedValue && savedValue >= 20 && savedValue <= 80) {
-          setSplitPercentage(savedValue);
-        } else {
-          setSplitPercentage(50);
-          set(key, 50);
-        }
-      });
-    }
-  }, [isMobile, mounted]);
+    const key = isMobile ? 'panelHeight' : 'panelWidth';
+    get(key).then((savedValue) => {
+      if (savedValue) {
+        setSplitPercentage(savedValue);
+      } else {
+        setSplitPercentage(50); // Default to equal sizes
+      }
+    });
+  }, [isMobile]);
 
+  // Handle dragging for resizing panels
   const handleDrag = (e: MouseEvent) => {
     if (isMobile) {
       const totalHeight = window.innerHeight;
@@ -50,52 +50,46 @@ const EditorLayout: React.FC = () => {
     }
   };
 
+  // Start dragging on divider click
   const startDragging = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    document.addEventListener('mousemove', handleDrag);
-    document.addEventListener(
-      'mouseup',
-      () => {
-        document.removeEventListener('mousemove', handleDrag);
-      },
-      { once: true }
-    );
+    document.addEventListener('mousemove', handleDrag as EventListener);
+    document.addEventListener('mouseup', () => {
+      document.removeEventListener('mousemove', handleDrag as EventListener);
+    }, { once: true });
   };
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <div
-      className="flex flex-col md:flex-row h-screen p-[2vw]"
-      style={{ backgroundColor: 'var(--background)' }}
+      className="h-screen bg-gray-200 p-[2vw]"
+      style={{
+        display: 'grid',
+        // Desktop: horizontal layout; Mobile: vertical layout
+        gridTemplateColumns: isMobile
+          ? '100%'
+          : `${splitPercentage}% 2px ${100 - splitPercentage}%`,
+        gridTemplateRows: isMobile
+          ? `${splitPercentage}% 2px ${100 - splitPercentage}%`
+          : '100%',
+      }}
     >
-      <motion.div
-        style={{ flex: `0 0 ${splitPercentage}%`, backgroundColor: 'var(--panel-bg)' }}
-        className="rounded-xl shadow-lg p-6 overflow-auto"
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      {/* Editor Panel */}
+      <div className="bg-white rounded-lg shadow-md overflow-auto mr-3">
         Editor Panel
-      </motion.div>
+      </div>
+
+      {/* Divider */}
       <div
-        className={`w-full h-4 md:w-8 md:h-full ${
+        className={`bg-gray-400 w-2.5  ${
           isMobile ? 'cursor-row-resize' : 'cursor-col-resize'
         }`}
-        style={{ backgroundColor: 'var(--divider)' }}
         onMouseDown={startDragging}
       />
-      <motion.div
-        style={{ flex: `0 0 ${100 - splitPercentage}%`, backgroundColor: 'var(--panel-bg)' }}
-        className="rounded-xl shadow-lg ml-5 p-6 overflow-auto"
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+
+      {/* Console Panel */}
+      <div className="bg-white rounded-lg shadow-md overflow-auto ml-5">
         Console Panel
-      </motion.div>
+      </div>
     </div>
   );
 };
